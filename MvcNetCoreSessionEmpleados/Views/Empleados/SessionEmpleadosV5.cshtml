@@ -1,0 +1,49 @@
+﻿@model List<Empleado>
+@{
+	//necesitamos session para saber el dibujo a realizar
+	List<int> ids = Context.Session.GetObject<List<int>>("IDSEMPLEADOS");
+}
+
+<h1>Session empleados V5</h1>
+
+<p>
+	<a asp-controller="Empleados" asp-action="EmpleadosAlmacenadosV5">Empleados Almacenados</a>
+</p>
+
+<h4>@ViewData["MENSAJE"]</h4>
+
+<ul class="list-group">
+    @foreach (Empleado empleado in Model)
+    {
+        <li class="list-group-item list-group-item-info">
+            @empleado.Apellido
+            @* PREGUNTAMOS SI EXISTE SESSION *@
+            @if (ids == null)
+            {
+                <a asp-controller="Empleados"
+                   asp-action="SessionEmpleadosV5"
+                   asp-route-idempleado="@empleado.IdEmpleado">
+                    Almacenar empleado
+                </a>
+            }
+            else
+            {
+                //PREGUNTAMOS SI EL EMPLEADO QUE ESTAMOS DIBUJANDO
+                //ESTA DENTRO DE SESSION
+                if (ids.Contains(empleado.IdEmpleado))
+                {
+                    //DIBUJAMOS LA IMAGEN
+                    <img src="https://img.freepik.com/vector-premium/senal-ok-icono-simbolo-mano_423491-228.jpg?semt=ais_hybrid" style="width:35px; height: 35px" />
+                }
+                else
+                {
+                    <a asp-controller="Empleados"
+                       asp-action="SessionEmpleadosV5"
+                       asp-route-idempleado="@empleado.IdEmpleado">
+                        Almacenar empleado
+                    </a>
+                }
+            }
+        </li>
+    }
+</ul>
