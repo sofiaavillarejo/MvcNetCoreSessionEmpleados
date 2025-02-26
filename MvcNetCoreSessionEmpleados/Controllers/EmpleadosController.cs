@@ -222,7 +222,7 @@ namespace MvcNetCoreSessionEmpleados.Controllers
             }
         }
 
-        public async Task<IActionResult> EmpleadosAlmacenadosV5()
+        public async Task<IActionResult> EmpleadosAlmacenadosV5(int? idEliminar)
         {
             // Recuperamos los IDs de empleados en sesión
             List<int> idsEmpleados = HttpContext.Session.GetObject<List<int>>("IDSEMPLEADOS");
@@ -233,6 +233,21 @@ namespace MvcNetCoreSessionEmpleados.Controllers
             }
             else
             {
+                //PREGUNTAMOS SI HEMOS RECIBIDO ALGUN VALOR PARA ELIMINAR
+                if (idEliminar != null)
+                {
+                    idsEmpleados.Remove(idEliminar.Value);
+                    //es posible que ya no haya empleados en session
+                    if(idsEmpleados.Count() == 0)
+                    {
+                        //eliminamos de session nuestra key
+                        HttpContext.Session.Remove("IDSEMPLEADOS");
+                    }else
+                    {
+                        //si todavia hay empleados, refrescamos session
+                        HttpContext.Session.SetObject("IDSEMPLEADOS", idsEmpleados); //volvemos a guardar la coleccion actualizada en session
+                    }
+                }
                 List<Empleado> empleados = await this.repo.GetEmpleadosSessionAsync(idsEmpleados);
                 return View(empleados);
             }
