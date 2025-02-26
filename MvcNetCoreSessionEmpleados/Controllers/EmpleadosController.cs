@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using MvcNetCoreSessionEmpleados.Extensions;
 using MvcNetCoreSessionEmpleados.Models;
 using MvcNetCoreSessionEmpleados.Repositories;
@@ -8,10 +9,12 @@ namespace MvcNetCoreSessionEmpleados.Controllers
     public class EmpleadosController : Controller
     {
         private RepositoryEmpleados repo;
+        private IMemoryCache memoryCache;
 
-        public EmpleadosController(RepositoryEmpleados repo)
+        public EmpleadosController(RepositoryEmpleados repo, IMemoryCache memoryCache) //inyectamos la memoria cache personalizada
         {
             this.repo = repo;
+            this.memoryCache = memoryCache;
         }
 
         //voy a recibir el salario del empleado para almacenarlo
@@ -182,8 +185,10 @@ namespace MvcNetCoreSessionEmpleados.Controllers
 
         }
 
-        public async Task<IActionResult> SessionEmpleadosV5(int? idEmpleado)
+        //[ResponseCache(Duration =80, Location =ResponseCacheLocation.Client)] //con esto funciona mal, porque ya tenemos session
+        public async Task<IActionResult> SessionEmpleadosV5(int? idEmpleado, int? idfavorito)
         {
+
             if (idEmpleado != null)
             {
                 //ALMACENAREMOS LO MINIMO QUE PODAMOS (int)
@@ -205,6 +210,29 @@ namespace MvcNetCoreSessionEmpleados.Controllers
                 ViewData["MENSAJE"] = "Empleados almacenados: "
                     + idsEmpleados.Count;
             }
+
+
+            //IDFAVORITO
+            if (idfavorito != null)
+            {
+                //COMO ESTOY ALMACENANDO EN CACHE DE CLIENTE, VAMOS A USAR LOS OBJETOS EN LUGAR DE LOS IDS
+                List<Empleado> empleadosFavoritos;
+                if(this.memoryCache.Get("FAVORITOS") == null)
+                {
+                    //NO EXISTEN, CREAMOS LA COLECCION DE FAVORTIOS
+                    empleadosFavoritos = new List<Empleado>();
+                }
+                else
+                {
+                    //RECUPERAMOS LOS EMPLEADOS QUE TENEMOS EN LA COLECCION DE FAVORITOS DE CACHE
+                    empleadosFavoritos = this.memoryCache.Get<List<Empleado>>("FAVORITOS");
+                }
+                //BUSCAMOS EL OBJETO EMPLEADO A ALMACENAR
+                Empleado emp = await this.repo.FindEmpleadoAsync(idfavorito.Value);
+                empleadosFavoritos.Add(emp);
+                this.memoryCache.Set("FAVORITOS", empleadosFavoritos);
+            }
+
             //COMPROBAMOS SI TENEMOS IDS EN SESSION
             List<int> ids =
                 HttpContext.Session.GetObject<List<int>>("IDSEMPLEADOS");
@@ -220,8 +248,11 @@ namespace MvcNetCoreSessionEmpleados.Controllers
                     await this.repo.GetEmpleadosAsync();
                 return View(empleados);
             }
+
+            
         }
 
+        //[ResponseCache(Duration = 80, Location = ResponseCacheLocation.Client)]
         public async Task<IActionResult> EmpleadosAlmacenadosV5(int? idEliminar)
         {
             // Recuperamos los IDs de empleados en sesión
@@ -262,6 +293,26 @@ namespace MvcNetCoreSessionEmpleados.Controllers
                 HttpContext.Session.SetObject("IDSEMPLEADOS", idsEmpleados);
             }
             return RedirectToAction("EmpleadosAlmacenadosV5");
+        }
+
+        public IActionResult EmpleadosFavoritos(int? ideliminar)
+        {
+            if(ideliminar != null)
+            {
+                List<Empleado> favoritos = this.memoryCache.Get<List<Empleado>>("FAVORITOS");
+                //BUSCAMOS EL EMPLEADO A ELIMINAR DENTRO DE LA COLECCION DE FAVORITOS
+                Empleado empDelete = favoritos.Find(z => z.IdEmpleado == ideliminar.Value); //buscamos el empleado a eliminar
+                favoritos.Remove(empDelete);
+                if(favoritos.Count == 0)
+                {
+                    this.memoryCache.Remove("FAVORITOS");
+                }else
+                {
+                    this.memoryCache.Set("FAVORITOS", favoritos);
+                }
+            }
+
+            return View();
         }
 
     }

@@ -53,22 +53,5 @@ namespace MvcNetCoreSessionEmpleados.Repositories
             }
         }
 
-        public async Task Delete(int idEmpleado)
-        {
-            // Buscamos al empleado
-            Empleado emp = await this.FindEmpleadoAsync(idEmpleado);
-
-            if (emp != null)
-            {
-                this.context.Empleados.Remove(emp);
-                await this.context.SaveChangesAsync();
-            }
-            else
-            {
-                throw new Exception("Empleado no encontrado");
-            }
-        }
-
-
     }
 }

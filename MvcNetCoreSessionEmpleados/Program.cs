@@ -7,8 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 //agregar session
-builder.Services.AddDistributedMemoryCache();
+builder.Services.AddDistributedMemoryCache();//va con decoraciones
 builder.Services.AddSession();
+
+//habilitamos la memoria cache personalizada
+builder.Services.AddMemoryCache();//IMemoryCache va con ese objeto y yo le digo que guardar de forma explicita
+
 
 string connectionString = builder.Configuration.GetConnectionString("SqlHospital");
 builder.Services.AddTransient<RepositoryEmpleados>();

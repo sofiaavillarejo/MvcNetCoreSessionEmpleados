@@ -1,11 +1,21 @@
 ﻿@model List<Empleado>
+
 @{
-	//necesitamos session para saber el dibujo a realizar
-	List<int> ids = Context.Session.GetObject<List<int>>("IDSEMPLEADOS");
+    //necesitamos session para saber el dibujo a realizar
+    List<int> ids = Context.Session.GetObject<List<int>>("IDSEMPLEADOS");
+    //necesitamos meory cache para los dibujos -> accedemos al objeto IMemoryCache que le improtamos en _ViewImports
+    List<Empleado> favoritos = memoryCache.Get<List<Empleado>>("FAVORITOS");
 }
 
 <h1>Session empleados V5</h1>
 
+@if (ids != null){
+    <h3 style="background-color: yellow">Empleados session: @ids.Count</h3>
+}
+@if (favoritos != null)
+{
+    <h3 style="background-color: pink">Empleados favoritos: @favoritos.Count</h3>
+}
 <p>
 	<a asp-controller="Empleados" asp-action="EmpleadosAlmacenadosV5">Empleados Almacenados</a>
 </p>
@@ -17,6 +27,20 @@
     {
         <li class="list-group-item list-group-item-info">
             @empleado.Apellido
+
+            @* enlace para agregar a favorito -> practica memoria personalizada *@
+            @* debemos preguntar si existe nuestro empleado *@
+            @if (favoritos == null){
+                <a asp-controller="Empleados" asp-action="SessionEmpleadosV5" asp-route-idfavorito="@empleado.IdEmpleado">Favorito</a>
+
+            }else{
+                Empleado emp = favoritos.Find(x => x.IdEmpleado == empleado.IdEmpleado);
+                if(emp != null){
+                    <img src="https://img.freepik.com/vector-premium/senal-ok-icono-simbolo-mano_423491-228.jpg?semt=ais_hybrid" style="width:35px; height: 35px" />
+                }else{
+                    <a asp-controller="Empleados" asp-action="SessionEmpleadosV5" asp-route-idfavorito="@empleado.IdEmpleado">Favorito</a>
+                }
+            }
             @* PREGUNTAMOS SI EXISTE SESSION *@
             @if (ids == null)
             {
